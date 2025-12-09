@@ -62,7 +62,7 @@ export const Table = ({
             } else {
                 const rect = e.currentTarget.getBoundingClientRect();
                 setFilterPosition({
-                    top: 25,
+                    top: rect.top + rect.height + 10,
                     left: rect.left - 70,
                 });
                 setActiveFilterColumn(key);
@@ -188,14 +188,6 @@ export const Table = ({
                         <span className="text-gray-400 text-sm">Loading data...</span>
                     </div>
                 </div>
-            )}
-
-            {/* Click outside filter */}
-            {activeFilterColumn && (
-                <div
-                    className="fixed inset-0 z-40"
-                    onClick={() => setActiveFilterColumn(null)}
-                />
             )}
         </div>
     );
