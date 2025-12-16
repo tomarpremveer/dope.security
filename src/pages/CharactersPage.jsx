@@ -1,12 +1,14 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Table } from '../components/Table/Table';
 import { clsx } from 'clsx';
 import { fetchData } from '../api/mockApi';
+import { Eye, EyeOff } from 'lucide-react';
 
 export const CharactersPage = () => {
     const [data, setData] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedIds, setSelectedIds] = useState([]);
+    const [viewedIds, setViewedIds] = useState(new Map()); // Map<id, boolean>
 
     // Query Params State
     const [searchQuery, setSearchQuery] = useState('');
@@ -43,7 +45,7 @@ export const CharactersPage = () => {
             isFilterable: true,
             filterOptions: ["Healthy", "Injured", "Critical"]
         },
-        { key: 'power', label: 'Power', isSortable: false, isFilterable: false },
+        { key: 'power', label: 'Power', isSortable: true, isFilterable: false },
     ], []);
 
     const handleSelectionChange = useCallback((ids) => {
@@ -69,10 +71,71 @@ export const CharactersPage = () => {
         });
     }, []);
 
+    // Mark as Viewed/Unviewed handlers
+    const handleMarkAsViewed = useCallback(() => {
+        if (selectedIds.length === 0) {
+            console.warn('No rows selected');
+            return;
+        }
+
+        console.log('Marking as viewed - Selected IDs:', selectedIds);
+
+        setViewedIds(prev => {
+            const newMap = new Map(prev);
+            selectedIds.forEach(id => newMap.set(id, true));
+            return newMap;
+        });
+    }, [selectedIds]);
+
+    const handleMarkAsUnviewed = useCallback(() => {
+        if (selectedIds.length === 0) {
+            console.warn('No rows selected');
+            return;
+        }
+
+        console.log('Marking as unviewed - Selected IDs:', selectedIds);
+
+        setViewedIds(prev => {
+            const newMap = new Map(prev);
+            selectedIds.forEach(id => newMap.set(id, false));
+            return newMap;
+        });
+    }, [selectedIds]);
+
     return (
         <div className="min-h-screen bg-gray-950 text-white p-8 font-sans">
             <div className="max-w-6xl mx-auto space-y-6">
-                <header className="flex justify-between items-end">
+                <header className="flex justify-between items-center">
+                    <div className="flex gap-3">
+                        <button
+                            onClick={handleMarkAsViewed}
+                            disabled={selectedIds.length === 0}
+                            className={clsx(
+                                "px-4 py-2 rounded font-medium transition-all flex items-center gap-2",
+                                selectedIds.length > 0
+                                    ? "bg-green-600 hover:bg-green-500 text-white shadow-lg shadow-green-500/20"
+                                    : "bg-gray-800 text-gray-500 cursor-not-allowed"
+                            )}
+                            aria-label="Mark selected rows as viewed"
+                        >
+                            <Eye size={18} />
+                            Mark as Viewed ({selectedIds.length})
+                        </button>
+                        <button
+                            onClick={handleMarkAsUnviewed}
+                            disabled={selectedIds.length === 0}
+                            className={clsx(
+                                "px-4 py-2 rounded font-medium transition-all flex items-center gap-2",
+                                selectedIds.length > 0
+                                    ? "bg-orange-600 hover:bg-orange-500 text-white shadow-lg shadow-orange-500/20"
+                                    : "bg-gray-800 text-gray-500 cursor-not-allowed"
+                            )}
+                            aria-label="Mark selected rows as unviewed"
+                        >
+                            <EyeOff size={18} />
+                            Mark as Unviewed ({selectedIds.length})
+                        </button>
+                    </div>
                     <button
                         onClick={handleLogSelected}
                         disabled={selectedIds.length === 0}
@@ -82,6 +145,7 @@ export const CharactersPage = () => {
                                 ? "bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-500/20"
                                 : "bg-gray-800 text-gray-500 cursor-not-allowed"
                         )}
+                        aria-label="Log selected entity IDs to console"
                     >
                         Log Selected ({selectedIds.length})
                     </button>
@@ -112,6 +176,7 @@ export const CharactersPage = () => {
                             sortConfig={sortConfig}
                             activeFilters={filters}
                             loading={loading}
+                            viewedIds={viewedIds}
                         />
                     </div>
                 </div>

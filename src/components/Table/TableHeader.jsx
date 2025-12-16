@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowUp, ArrowDown, Filter } from 'lucide-react';
+import { ChevronUp, ChevronDown, Filter } from 'lucide-react';
 import { Checkbox } from '../ui/Checkbox';
 
 const TableHeaderComponent = ({
@@ -13,15 +13,19 @@ const TableHeaderComponent = ({
     isIndeterminate
 }) => {
     return (
-        <div className="flex items-center border-b border-gray-700 bg-gray-900 text-gray-300 font-medium text-sm sticky top-0 z-10">
+        <div
+            className="flex items-center border-b border-gray-700 bg-gray-900 text-gray-300 font-medium text-sm sticky top-0 z-10"
+            role="row"
+        >
             {/* Selection Column Header */}
-            <div className="w-[50px] flex items-center justify-center p-3 border-r border-gray-700">
+            <div className="w-[50px] flex items-center justify-center p-3 border-r border-gray-700" role="columnheader">
                 <Checkbox
                     checked={allSelected}
                     ref={input => {
                         if (input) input.indeterminate = isIndeterminate;
                     }}
                     onChange={onSelectAll}
+                    aria-label="Select all rows"
                 />
             </div>
 
@@ -31,20 +35,33 @@ const TableHeaderComponent = ({
                     key={col.key}
                     className="flex items-center p-3"
                     style={{ width: col.width || 'flex-1', flex: col.width ? 'none' : 1 }}
+                    role="columnheader"
+                    aria-sort={
+                        sortConfig?.key === col.key
+                            ? sortConfig.direction === 'asc' ? 'ascending' : 'descending'
+                            : col.isSortable ? 'none' : undefined
+                    }
                 >
                     <span className="mr-2">{col.label}</span>
 
-                    {/* Sorting */}
+                    {/* Sorting with Chevron Icons */}
                     {col.isSortable && (
                         <button
                             onClick={() => onSort(col.key)}
-                            className="p-1 hover:bg-gray-800 rounded transition-colors"
-                            aria-label={`Sort by ${col.label}`}
+                            className="p-1 hover:bg-gray-800 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            aria-label={`Sort by ${col.label} ${sortConfig?.key === col.key
+                                    ? sortConfig.direction === 'asc' ? 'descending' : 'ascending'
+                                    : 'ascending'
+                                }`}
                         >
                             {sortConfig?.key === col.key ? (
-                                sortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />
+                                sortConfig.direction === 'asc' ? (
+                                    <ChevronUp size={16} className="text-indigo-400" />
+                                ) : (
+                                    <ChevronDown size={16} className="text-indigo-400" />
+                                )
                             ) : (
-                                <div className="h-[14px] w-[14px]" />
+                                <ChevronUp size={16} className="text-gray-600" />
                             )}
                         </button>
                     )}

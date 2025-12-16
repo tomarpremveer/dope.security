@@ -3,6 +3,7 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import { TableHeader } from "./TableHeader";
 import { TableFilter } from "./TableFilter";
 import { Checkbox } from "../ui/Checkbox";
+import { Eye } from "lucide-react";
 import { clsx } from "clsx";
 import { SORT_DIRECTION } from "../../constants";
 
@@ -15,6 +16,7 @@ export const Table = ({
     sortConfig,
     activeFilters,
     loading = false,
+    viewedIds = new Map(),
 }) => {
     const [selectedIds, setSelectedIds] = useState(new Set());
     const [activeFilterColumn, setActiveFilterColumn] = useState(null);
@@ -128,24 +130,58 @@ export const Table = ({
                 className="overflow-auto relative"
                 style={{ height: "400px" }}   // ★ FIXED HEIGHT = virtualization works
             >
-                <div
-                    style={{
-                        height: rowVirtualizer.getTotalSize(),
-                        width: "100%",
-                        position: "relative",
-                    }}
-                >
-                    {!loading &&
-                        rowVirtualizer.getVirtualItems().map((virtualRow) => {
+                {loading ? (
+                    /* Loading State - Centered in table body */
+                    <div className="flex items-center justify-center h-full">
+                        <div className="flex flex-col items-center gap-4 py-12">
+                            <div className="relative">
+                                <div className="w-12 h-12 border-4 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin"></div>
+                                <div className="absolute inset-0 w-12 h-12 border-4 border-transparent border-r-indigo-400 rounded-full animate-spin" style={{ animationDirection: 'reverse', animationDuration: '1.5s' }}></div>
+                            </div>
+                            <div className="text-center">
+                                <p className="text-gray-300 font-medium">Loading data...</p>
+                                <p className="text-gray-500 text-sm mt-1">Please wait while we fetch your data</p>
+                            </div>
+                        </div>
+                    </div>
+                ) : data.length === 0 ? (
+                    /* Empty State - Centered in table body */
+                    <div className="flex items-center justify-center h-full">
+                        <div className="flex flex-col items-center gap-4 py-12 px-6 max-w-md text-center">
+                            <div className="w-16 h-16 rounded-full bg-gray-800 flex items-center justify-center">
+                                <svg className="w-8 h-8 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 className="text-gray-200 font-semibold text-lg mb-2">No results found</h3>
+                                <p className="text-gray-400 text-sm leading-relaxed">
+                                    We couldn't find any data matching your search or filters. Try adjusting your criteria or clearing filters to see more results.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                ) : (
+                    /* Data Rows */
+                    <div
+                        style={{
+                            height: rowVirtualizer.getTotalSize(),
+                            width: "100%",
+                            position: "relative",
+                        }}
+                    >
+                        {rowVirtualizer.getVirtualItems().map((virtualRow) => {
                             const item = data[virtualRow.index];
                             const isSelected = selectedIds.has(item.id);
+                            const isViewed = viewedIds.get(item.id) === true;
 
                             return (
                                 <div
                                     key={item.id}
                                     className={clsx(
-                                        "flex items-center border-b border-gray-800 hover:bg-gray-800/50 transition-colors",
-                                        isSelected && "bg-gray-800/80"
+                                        "flex items-center border-b border-gray-800 hover:bg-gray-800/50 transition-colors relative",
+                                        isSelected && "bg-gray-800/80",
+                                        isViewed && "border-l-4 border-l-green-500"
                                     )}
                                     style={{
                                         position: "absolute",
@@ -154,11 +190,25 @@ export const Table = ({
                                         width: "100%",
                                         height: virtualRow.size,
                                     }}
+                                    role="row"
+                                    aria-selected={isSelected}
                                 >
-                                    <div className="w-[50px] flex items-center justify-center p-3 border-r border-gray-800">
+                                    {/* Viewed Indicator */}
+                                    {isViewed && (
+                                        <div
+                                            className="absolute left-1 top-1/2 -translate-y-1/2 text-green-500"
+                                            aria-label="Viewed"
+                                            title="This row has been marked as viewed"
+                                        >
+                                            <Eye size={14} />
+                                        </div>
+                                    )}
+
+                                    <div className="w-[50px] flex items-center justify-center p-3 border-r border-gray-800" role="cell">
                                         <Checkbox
                                             checked={isSelected}
                                             onChange={() => handleSelectRow(item.id)}
+                                            aria-label={`Select row ${item.name}`}
                                         />
                                     </div>
 
@@ -170,6 +220,7 @@ export const Table = ({
                                                 width: col.width || "auto",
                                                 flex: col.width ? "none" : 1,
                                             }}
+                                            role="cell"
                                         >
                                             {item[col.key]}
                                         </div>
@@ -177,18 +228,9 @@ export const Table = ({
                                 </div>
                             );
                         })}
-                </div>
-            </div>
-
-            {/* Loading Overlay */}
-            {loading && (
-                <div className="absolute inset-0 flex items-center justify-center bg-gray-900/95 z-20">
-                    <div className="flex flex-col items-center gap-3">
-                        <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
-                        <span className="text-gray-400 text-sm">Loading data...</span>
                     </div>
-                </div>
-            )}
+                )}
+            </div>
         </div>
     );
 };
